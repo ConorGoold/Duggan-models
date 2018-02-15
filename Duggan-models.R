@@ -414,12 +414,13 @@ fit <- data.frame(
 
 fit_BAU <- data.frame(
   ode(y = stocks, times = simtime, func = health_care_model, 
-      parms = c(auxs[-16], "wky_flag" = 0), method = "euler")
+      parms = c(auxs[-c(16:17)], "wky_flag" = 0, "prod_flag" = 0), 
+      method = "euler")
 )
 
 fit_Flex <- data.frame(
   ode(y = stocks, times = simtime, func = health_care_model, 
-      parms = c(auxs[-16], "wky_flag" = 1), method = "euler")
+      parms = c(auxs[-c(16:17)], "wky_flag" = 1, "prod_flag" = 1), method = "euler")
 )
 
 head(fit)
@@ -626,4 +627,88 @@ fit_SIR_dis %>%
   geom_line(aes(time, sInfectedA), col = "red") + 
   geom_line(aes(time, sInfectedE), col = "green") + 
   geom_line(aes(time, sInfectedY+sInfectedA+sInfectedE))
+
+#--------------------------------------------------------------------------
+#### Model testing (Chapter 6)
+#--------------------------------------------------------------------------
+
+# important model testing reference: 
+# * * * Barlas (1996). Formal aspects of model validity and validation in system dynamics.
+
+# ** Using the first SIR model above **
+
+# First test: no susceptible people should = no more infected people
+stocks <- c(sSusceptible = 0, 
+            sInfected = 10000, 
+            sRecovered = 0)
+auxs <- c(aCE = 2, 
+          aDelay = 2)
+
+test_SIR_1 <- data.frame(
+  ode(y = stocks, times = simtime, func = SIR, parms = auxs, method = "euler")
+)
+
+test_SIR_1 %>%
+  ggplot() + 
+  geom_line(aes(time, sSusceptible)) + 
+  geom_line(aes(time, sInfected), linetype="dashed")
+
+
+# Second test: no infected people = no infected people
+stocks <- c(sSusceptible = 10000, 
+            sInfected = 0, 
+            sRecovered = 0)
+auxs <- c(aCE = 2, 
+          aDelay = 2)
+
+test_SIR_2 <- data.frame(
+  ode(y = stocks, times = simtime, func = SIR, parms = auxs, method = "euler")
+)
+
+test_SIR_2 %>%
+  ggplot() + 
+  geom_line(aes(time, sSusceptible)) + 
+  geom_line(aes(time, sInfected), linetype="dashed")
+
+# Third test: no effective contacts = no transmission
+stocks <- c(sSusceptible = 9999, 
+            sInfected = 1, 
+            sRecovered = 0)
+auxs <- c(aCE = 0, 
+          aDelay = 2)
+
+test_SIR_3 <- data.frame(
+  ode(y = stocks, times = simtime, func = SIR, parms = auxs, method = "euler")
+)
+
+test_SIR_3 %>%
+  ggplot() + 
+  geom_line(aes(time, sSusceptible)) + 
+  geom_line(aes(time, sInfected), linetype="dashed")
+
+# Fourth test: delay is infinity
+stocks <- c(sSusceptible = 9999, 
+            sInfected = 1, 
+            sRecovered = 0)
+auxs <- c(aCE = 2, 
+          aDelay = Inf)
+
+test_SIR_4 <- data.frame(
+  ode(y = stocks, times = simtime, func = SIR, parms = auxs, method = "euler")
+)
+
+test_SIR_4 %>%
+  ggplot() + 
+  geom_line(aes(time, sSusceptible)) + 
+  geom_line(aes(time, sInfected), linetype="dashed")
+
+test_SIR_4 %>%
+  ggplot() + 
+  geom_line(aes(time, RR))
+
+
+
+
+
+
 
